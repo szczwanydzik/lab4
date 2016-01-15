@@ -1,10 +1,12 @@
-﻿##  Wzorowane na przykładzie Rona Zacharskiego
+from numpy import median, absolute
+from math import sqrt
+
 
 class Classifier:
 
     def __init__(self, filename):
 
-        self.medianAndDeviation = []       
+        self.medianAndDeviation = []
         # reading the data in from the file
         f = open(filename)
         lines = f.readlines()
@@ -22,48 +24,52 @@ class Classifier:
                     ignore.append(fields[i])
                 elif self.format[i] == 'class':
                     classification = fields[i]
-            self.data.append((classification, vector, ignore))
+            self.data.append([classification, vector, ignore])
         self.rawData = list(self.data)
         # get length of instance vector
         self.vlen = len(self.data[0][1])
         # now normalize the data
         for i in range(self.vlen):
             self.normalizeColumn(i)
-        
-
-        
 
     def getMedian(self, alist):
-        """TODO: zwraca medianę listy"""
+        med = median(alist)
+        return med
 
-        return 0
-        
-
-    def getAbsoluteStandardDeviation(self, alist, median):
-        """TODO: zwraca absolutne odchylenie standardowe listy od mediany"""
-        return 0
+    def getAbsoluteStandardDeviation(self, alist, med):
+        asd = sum([absolute(x-med) for x in alist])/len(alist)
+        return asd
 
     def normalizeColumn(self, columnNumber):
-        """TODO: mając dany nr kolumny w self.data, dokonuje normalizacji wg Modified Standard Score"""
 
+        col = [v[1][columnNumber] for v in self.data]
+        med = self.getMedian(col)
+        asd = self.getAbsoluteStandardDeviation(col, med)
+        for v in self.data:
+            v[1][columnNumber] = (v[1][columnNumber]-med)/asd
         pass
 
+    def normalizeVector(self, v):
+
+        vector = list(v)
+        for i in range(len(vector)):
+            (med, asd) = self.medianAndDeviation[i]
+            vector[i] = (vector[i] - med) / asd
+        return vector
 
     def manhattan(self, vector1, vector2):
-        """Zwraca odległość Manhattan między dwoma wektorami cech."""
         return sum(map(lambda v1, v2: abs(v1 - v2), vector1, vector2))
-
 
     def nearestNeighbor(self, itemVector):
         """return nearest neighbor to itemVector"""
-        
-        return ((0, ("TODO: Zwróc najbliższego sąsiada", [0], [])))
-    
+        return min([ (self.manhattan(itemVector, item[1]), item)
+                     for item in self.data])
+
     def classify(self, itemVector):
         """Return class we think item Vector is in"""
         return(self.nearestNeighbor(self.normalizeVector(itemVector))[1][0])
-        
-        
+
+
 def testMedianAndASD():
     list1 = [54, 72, 78, 49, 65, 63, 75, 67, 54]
     list2 = [54, 72, 78, 49, 65, 63, 75, 67, 54, 68]
@@ -113,13 +119,13 @@ def testNormalization():
              [-1.2605, -0.8915], [0.7563, 0.0297], [0.7563, 1.4264],
              [0.7563, 1.4264], [-0.4202, 0.0297], [-0.084, -0.0297],
              [0.084, -0.2972], [-0.7563, -0.9212]]
-    
+
 
     for i in range(len(list1)):
         assert(round(classifier.data[i][1][0],4) == list1[i][0])
         assert(round(classifier.data[i][1][1],4) == list1[i][1])
     print("normalizeColumn is OK")
-    
+
 def testClassifier():
     classifier = Classifier('athletesTrainingSet.txt')
     br = ('Basketball', [72, 162], ['Brittainey Raven'])
@@ -151,8 +157,8 @@ def testClassifier():
     assert(classifier.classify(cl[1]) == 'Basketball')
     assert(classifier.classify(nl[1]) == 'Gymnastics')
     print('Classify fn OK')
-    
-    
+
+
 def test(training_filename, test_filename):
     """Test the classifier on a test set of data"""
     classifier = Classifier(training_filename)
@@ -177,15 +183,14 @@ def test(training_filename, test_filename):
             prefix = '+'
         print("%s  %12s  %s" % (prefix, theClass, line))
     print("%4.2f%% correct" % (numCorrect * 100/ len(lines)))
-        
 
-##
-##  Przykłady użycia
-#  test('athletesTrainingSet.txt', 'athletesTestSet.txt')
-#  test("irisTrainingSet.data", "irisTestSet.data")
-#  test("mpgTrainingSet.txt", "mpgTestSet.txt")
+
+
+#test('athletesTrainingSet.txt', 'athletesTestSet.txt')
+#test("irisTrainingSet.data", "irisTestSet.data")
+#test("mpgTrainingSet.txt", "mpgTestSet.txt")
 
 testMedianAndASD()
-# testNormalization()
-# testClassifier()
+testNormalization()
+#testClassifier()
 
